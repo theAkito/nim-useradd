@@ -1,3 +1,6 @@
 [submodule "tasks"]
 	path = helpers
 	url = https://github.com/theAkito/nim-tools.git
+[submodule "helpers"]
+	path = helpers
+	url = https://github.com/theAkito/nim-tools.git
