@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "Akito <the@akito.ooo>"
-description   = "An awesome Nimble package."
+description   = "Linux adduser/useradd library."
 license       = "GPL-3.0-or-later"
 skipDirs      = @["helpers"]
 skipFiles     = @["README.md"]
@@ -41,6 +41,7 @@ task fbuild, "Build project.":
             --define:appRevision:"{buildRevision}" \
             --define:appDate:"{buildDate}" \
             --define:danger \
+            --passL="-lcrypt" \
             --opt:speed \
             --out:useradd_prod \
             useradd && \
@@ -59,6 +60,7 @@ task dbuild, "Debug Build project.":
             --define:appDate:"{buildDate}" \
             --define:debug:true \
             --debuginfo:on \
+            --passL="-lcrypt" \
             --out:useradd_debug \
             useradd
        """
