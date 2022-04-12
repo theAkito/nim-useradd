@@ -13,9 +13,12 @@ const
   configName        * {.strdefine.}  = "useradd.json"
   configPath        * {.strdefine.}  = ""
   configIndentation * {.intdefine.}  = 2
-  sourcepage        * {.strdefine.}  = "https://github.com/theAkito/useradd"
+  sourcepage        * {.strdefine.}  = "https://github.com/theAkito/nim-useradd"
   homepage          * {.strdefine.}  = sourcepage
   wikipage          * {.strdefine.}  = sourcepage
+  passwdPath        * {.strdefine.}  = "/etc/passwd"
+  shadowPath        * {.strdefine.}  = "/etc/shadow"
+  groupPath         * {.strdefine.}  = "/etc/group"
 
 
 func defineLogLevel*(): Level =
