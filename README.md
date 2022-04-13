@@ -28,7 +28,7 @@ First, install this library.
 nimble install useradd
 ```
 
-Make sure, you are linking your project during compilation with the [`crypt(3)`](https://linux.die.net/man/3/crypt) library.
+Make sure, you are linking your project during compilation with the [crypt(3)](https://linux.die.net/man/3/crypt) library.
 ```bash
 nim c --passL="-lcrypt" example
 ```
@@ -105,7 +105,7 @@ echo "Success Delete User: " & $deleteUser("mygenericusername") # Deletes from `
 If for whatever reason, you do not like the encryption method employed, because the salt uses the, at this time, yet unaudited [`std/sysrand`](https://nim-lang.org/docs/sysrand.html) module, to generate a salt, then you are free to encrypt with your own salt.
 
 ```nim
-import useradd/crypt
+import useradd, useradd/crypt
 
 const
   password = "hello"
@@ -125,7 +125,7 @@ echo "Success: " & $addUser( # Add user with your own self-generated password.
 )
 ```
 
-See the [`crypt(3)`](https://linux.die.net/man/3/crypt) manual for more information on how to properly create the salt.
+See the [crypt(3)](https://linux.die.net/man/3/crypt) manual for more information on how to properly create the salt.
 
 ### Hints
 * `root` permissions are needed, as we are modifying system files.
