@@ -115,6 +115,8 @@ let
   logger = getLogger("useradd")
   timestamp = now().toTime.toUnix div 60 div 60 div 24 ## https://stackoverflow.com/questions/1094291/get-current-date-in-epoch-from-unix-shell-script/1094354#1094354
 
+proc lckpwdf(): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/lckpwdf
+proc ulckpwdf(): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/lckpwdf
 proc putpwent(p: ptr Passwd, stream: File): int {.importc, header: "<pwd.h>", sideEffect.} ## https://linux.die.net/man/3/putpwent
 proc putspent(p: ptr Shadow, fp: File): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/putspent
 proc putgrent(grp: ptr Group, fp: File): int {.importc, header: "<grp.h>", sideEffect.} ## https://linux.die.net/man/3/putgrent
@@ -129,13 +131,19 @@ proc readPasswd(): seq[ptr Passwd] =
   endpwent()
 
 proc addUser(entry: ptr Passwd): bool =
-  let passwdFile = passwdPath.open(mode = fmAppend)
+  let
+    passwdFile = passwdPath.open(mode = fmAppend)
+    passwdFileHandle = passwdFile.getOsFileHandle()
+  if passwdFileHandle.lockf(F_TEST, 0) == -1: return false
+  if passwdFileHandle.lockf(F_TLOCK, 0) == -1: return false
   defer: passwdFile.close
-  putpwent(entry, passwdFile) == 0
+  putpwent(entry, passwdFile) == 0 and passwdFileHandle.lockf(F_ULOCK, 0) == 0
 
 proc addShadow(entry: ptr Shadow): bool =
+  if lckpwdf() == -1: return false
   let shadowFile = shadowPath.open(mode = fmAppend)
   defer: shadowFile.close
+  defer: discard ulckpwdf()
   putspent(entry, shadowFile) == 0
 
 proc addGroup(entry: ptr Group): bool =
@@ -170,7 +178,6 @@ proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = 
   ## https://tldp.org/HOWTO/Shadow-Password-HOWTO-8.html
   ## https://www.tutorialsandyou.com/linux/linux-group-file-7.html
   ## https://www.redhat.com/sysadmin/linux-gecos-demystified
-  # TODO: lckpwdf()
   var
     realGid = gid.Gid
     passwd = Passwd(
