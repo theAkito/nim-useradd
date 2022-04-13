@@ -5,6 +5,9 @@ import
     sequtils
   ]
 
+proc readLines*(file: File): seq[string] =
+  file.readAll.splitLines
+
 proc readLines*(filePath: string): seq[string] =
   filePath.readFile.splitLines
 

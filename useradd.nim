@@ -125,20 +125,21 @@ proc putgrent(grp: ptr Group, fp: File): int {.importc, header: "<grp.h>", sideE
 proc lockFile(file: File): bool
 proc unlockFile(file: File): bool
 proc append(path: string): File = path.open(mode = fmAppend)
-proc lockPasswd():   bool = passwdPath.append.lockFile()
-proc unlockPasswd(): bool = passwdPath.append.unlockFile()
-proc lockShadow():   bool = shadowPath.append.lockFile()
-proc unlockShadow(): bool = shadowPath.append.unlockFile()
-proc lockGroup():    bool = groupPath.append.lockFile()
-proc unlockGroup():  bool = groupPath.append.unlockFile()
 
 proc lockFile(file: File): bool =
   let fileHandle = file.getOsFileHandle()
-  if fileHandle.lockf(F_TEST, 0) == -1: return false
-  fileHandle.lockf(F_TLOCK, 0) == 0
+  fileHandle.lockf(F_TEST, 0) == 0 and fileHandle.lockf(F_TLOCK, 0) == 0
 
 proc unlockFile(file: File): bool =
   file.getOsFileHandle().lockf(F_ULOCK, 0) == 0
+
+template unlockAll(): untyped =
+  passwdFile.unlockFile() and shadowFile.unlockFile() and groupFile.unlockFile()
+
+template lockAllOrReturn(): untyped =
+  if not passwdFile.lockFile(): return false
+  if not shadowFile.lockFile(): return false
+  if not groupFile.lockFile(): return false
 
 proc readPasswd(): seq[ptr Passwd] =
   ## Reads all password entries from `/etc/passwd`.
@@ -248,9 +249,6 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
   ##
   ## For more information regarding the API for adding a user in general,
   ## check out `addUser`'s and this module's documentation.
-  if not lockPasswd(): return false
-  if not lockShadow(): return false
-  if not lockGroup(): return false
   let
     pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
     passwdFile = passwdPath.append
@@ -265,29 +263,34 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
     groupLines = @[
       &"{name}:{pwPlaceholder}:{gid}:{name}"
     ]
+  lockAllOrReturn()
   defer: passwdFile.close
   defer: shadowFile.close
   defer: groupFile.close
   passwdFile.writeLines(passwdLines)
   shadowFile.writeLines(shadowLines)
   groupFile.writeLines(groupLines)
-  unlockPasswd() and unlockShadow() and unlockGroup()
+  unlockAll()
 
-proc deleteUser*(name: string) =
+proc deleteUser*(name: string): bool =
   ## Deletes a user by manually deleting its entry from `/etc/passwd`, `/etc/shadow` and
   ## a corresponding group entry from `/etc/group`.
   let
+    passwdFile = passwdPath.open(mode = fmRead)
+    shadowFile = shadowPath.open(mode = fmRead)
+    groupFile = groupPath.open(mode = fmRead)
     nameMatch = name & ":"
-    passwdContent = utils.readLines(passwdPath)
-    shadowContent = utils.readLines(shadowPath)
-    groupContent = utils.readLines(groupPath)
+    passwdContent = passwdFile.readLines()
+    shadowContent = shadowFile.readLines()
+    groupContent = groupFile.readLines()
     passwdContentClean = passwdContent.filterNotStartsWith(nameMatch)
     shadowContentClean = shadowContent.filterNotStartsWith(nameMatch)
     groupContentClean = groupContent.filterNotStartsWith(nameMatch)
-  passwdPath.writeFile(passwdContentClean.join(lineEnd))
-  shadowPath.writeFile(shadowContentClean.join(lineEnd))
-  groupPath.writeFile(groupContentClean.join(lineEnd))
-
+  lockAllOrReturn()
+  passwdFile.write(passwdContentClean.join(lineEnd))
+  shadowFile.write(shadowContentClean.join(lineEnd))
+  groupFile.write(groupContentClean.join(lineEnd))
+  unlockAll()
 
 when isMainModule:
   const test_password_enc = "$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB."
