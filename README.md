@@ -110,12 +110,14 @@ import useradd, useradd/crypt
 const
   password = "hello"
   salt = "$6$mycustomslt$"
+    # Salt itself, i.e. `mycustomslt`, must be 16 characters long.
+    # The `6` means, we want a SHA-512 hash (best hash possible, at the time of writing).
 
 echo encrypt(password) # Uses this module's way of generating the salt.
 
 echo encrypt(password, salt) # You provide you own salt according to crypt(3)s specification: $5$salt$
 
-echo "Success: " & $addUser( # Add user with your own self-generated password.
+echo "Success: " & $addUser( # Add user with your own self-encrypted password.
   name = "mygenericusername",
   uid = 99121,
   gid = 99322,
