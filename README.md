@@ -27,6 +27,11 @@ First, install this library.
 ```nim
 nimble install useradd
 ```
+
+Make sure, you are linking your project during compilation with the [`crypt(3)`](https://linux.die.net/man/3/crypt) library.
+```bash
+nim c --passL="-lcrypt" example
+```
 ### Usage Examples
 #### Add User
 
