@@ -141,10 +141,14 @@ proc addUser(entry: ptr Passwd): bool =
 
 proc addShadow(entry: ptr Shadow): bool =
   if lckpwdf() == -1: return false
-  let shadowFile = shadowPath.open(mode = fmAppend)
+  let
+    shadowFile = shadowPath.open(mode = fmAppend)
+    shadowFileHandle = shadowFile.getOsFileHandle()
+  if shadowFileHandle.lockf(F_TEST, 0) == -1: return false
+  if shadowFileHandle.lockf(F_TLOCK, 0) == -1: return false
   defer: shadowFile.close
   defer: discard ulckpwdf()
-  putspent(entry, shadowFile) == 0
+  putspent(entry, shadowFile) == 0 and shadowFileHandle.lockf(F_ULOCK, 0) == 0
 
 proc addGroup(entry: ptr Group): bool =
   let grpFile = groupPath.open(mode = fmAppend)
