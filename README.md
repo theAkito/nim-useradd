@@ -87,6 +87,14 @@ echo "Success: " & $addUserMan( # Only the `proc` name changed. The API stays ex
 )
 ```
 
+### Remove User
+
+```nim
+import useradd
+
+echo "Success Delete User: " & $deleteUser("mygenericusername") # Deletes from `/etc/passwd`, `/etc/shadow` and `/etc/group` by name!
+```
+
 ## Features
 * Automatic File Locking -> Do not worry about corrupting `/etc/passwd`, `/etc/shadow` or `/etc/group`!
 * Automatic Password Encryption -> Do not worry about properly hashing the password, if providing one!
