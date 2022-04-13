@@ -115,11 +115,14 @@ let
   logger = getLogger("useradd")
   timestamp = now().toTime.toUnix div 60 div 60 div 24 ## https://stackoverflow.com/questions/1094291/get-current-date-in-epoch-from-unix-shell-script/1094354#1094354
 
+## C API
 proc lckpwdf(): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/lckpwdf
 proc ulckpwdf(): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/lckpwdf
 proc putpwent(p: ptr Passwd, stream: File): int {.importc, header: "<pwd.h>", sideEffect.} ## https://linux.die.net/man/3/putpwent
 proc putspent(p: ptr Shadow, fp: File): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/putspent
 proc putgrent(grp: ptr Group, fp: File): int {.importc, header: "<grp.h>", sideEffect.} ## https://linux.die.net/man/3/putgrent
+## Utils
+proc append(path: string): File = path.open(mode = fmAppend)
 
 proc lockFile(file: File): bool =
   let fileHandle = file.getOsFileHandle()
@@ -130,22 +133,22 @@ proc unlockFile(file: File): bool =
   file.getOsFileHandle().lockf(F_ULOCK, 0) == 0
 
 proc lockPasswd(): bool =
-  passwdPath.open(mode = fmAppend).lockFile()
+  passwdPath.append.lockFile()
 
 proc unlockPasswd(): bool =
-  passwdPath.open(mode = fmAppend).unlockFile()
+  passwdPath.append.unlockFile()
 
 proc lockShadow(): bool =
-  shadowPath.open(mode = fmAppend).lockFile()
+  shadowPath.append.lockFile()
 
 proc unlockShadow(): bool =
-  shadowPath.open(mode = fmAppend).unlockFile()
+  shadowPath.append.unlockFile()
 
 proc lockGroup(): bool =
-  groupPath.open(mode = fmAppend).lockFile()
+  groupPath.append.lockFile()
 
 proc unlockGroup(): bool =
-  groupPath.open(mode = fmAppend).unlockFile()
+  groupPath.append.unlockFile()
 
 proc readPasswd(): seq[ptr Passwd] =
   ## Reads all password entries from `/etc/passwd`.
@@ -157,21 +160,21 @@ proc readPasswd(): seq[ptr Passwd] =
   endpwent()
 
 proc addUser(entry: ptr Passwd): bool =
-  let passwdFile = passwdPath.open(mode = fmAppend)
+  let passwdFile = passwdPath.append
   if not passwdFile.lockFile(): return false
   defer: passwdFile.close
   putpwent(entry, passwdFile) == 0 and passwdFile.unlockFile()
 
 proc addShadow(entry: ptr Shadow): bool =
   if lckpwdf() == -1: return false
-  let shadowFile = shadowPath.open(mode = fmAppend)
+  let shadowFile = shadowPath.append
   if not shadowFile.lockFile(): return false
   defer: shadowFile.close
   defer: discard ulckpwdf()
   putspent(entry, shadowFile) == 0 and shadowFile.unlockFile()
 
 proc addGroup(entry: ptr Group): bool =
-  let grpFile = groupPath.open(mode = fmAppend)
+  let grpFile = groupPath.append
   if not grpFile.lockFile(): return false
   defer: grpFile.close
   putgrent(entry, grpFile) == 0 and grpFile.unlockFile()
@@ -260,9 +263,9 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
   if not lockGroup(): return false
   let
     pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
-    passwdFile = passwdPath.open(mode = fmAppend)
-    shadowFile = shadowPath.open(mode = fmAppend)
-    groupFile = groupPath.open(mode = fmAppend)
+    passwdFile = passwdPath.append
+    shadowFile = shadowPath.append
+    groupFile = groupPath.append
     passwdLines = @[
       &"{name}:{pwPlaceholder}:{uid}:{gid}:{gecos}:{home}:{shell}"
     ]
