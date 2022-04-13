@@ -276,10 +276,10 @@ proc deleteUser*(name: string): bool =
   ## Deletes a user by manually deleting its entry from `/etc/passwd`, `/etc/shadow` and
   ## a corresponding group entry from `/etc/group`.
   let
-    passwdFile = passwdPath.open(mode = fmRead)
-    shadowFile = shadowPath.open(mode = fmRead)
-    groupFile = groupPath.open(mode = fmRead)
-    nameMatch = name & ":"
+    passwdFile = passwdPath.open(mode = fmReadWriteExisting)
+    shadowFile = shadowPath.open(mode = fmReadWriteExisting)
+    groupFile = groupPath.open(mode = fmReadWriteExisting)
+    nameMatch = name & ':'
     passwdContent = passwdFile.readLines()
     shadowContent = shadowFile.readLines()
     groupContent = groupFile.readLines()
@@ -287,18 +287,40 @@ proc deleteUser*(name: string): bool =
     shadowContentClean = shadowContent.filterNotStartsWith(nameMatch)
     groupContentClean = groupContent.filterNotStartsWith(nameMatch)
   lockAllOrReturn()
+  defer: passwdFile.close
+  defer: shadowFile.close
+  defer: groupFile.close
   passwdFile.write(passwdContentClean.join(lineEnd))
   shadowFile.write(shadowContentClean.join(lineEnd))
   groupFile.write(groupContentClean.join(lineEnd))
   unlockAll()
 
 when isMainModule:
-  const test_password_enc = "$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB."
-  echo "Success: " & $addUser(
-    "testuser",
-    99123,
-    99321,
-    "/home/testuser",
-    pw = test_password_enc,
-    pwIsEncrypted = true
-  )
+  import os
+  const
+    test_username_api = "testuserapi"
+    test_username_manual = "testuserman"
+    test_password_enc = "$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB."
+  if commandLineParams().len > 0 and commandLineParams()[0] == "api":
+    echo "Success Delete User: " & $deleteUser(test_username_api)
+    echo "Success API: " & $addUser(
+      test_username_api,
+      99121,
+      99322,
+      "/home/testuserapi",
+      pw = test_password_enc,
+      pwIsEncrypted = true
+    )
+  elif commandLineParams().len > 0 and commandLineParams()[0] == "manual":
+    echo "Success Delete User: " & $deleteUser(test_username_manual)
+    echo "Success MANUAL: " & $addUserMan(
+      test_username_manual,
+      99123,
+      99324,
+      "/home/testuserman",
+      pw = test_password_enc,
+      pwIsEncrypted = true
+    )
+  else:
+    echo """First argument must either be "api" or "manual"!"""
+    quit(1)
