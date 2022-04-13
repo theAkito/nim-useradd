@@ -161,7 +161,7 @@ proc addUser*(name: string, uid, gid: int, home: string, shell = "", pw = "", pw
     grpMembers = @[name].allocCStringArray
     grp = Group(
       gr_name: name,
-      gr_passwd: pw,
+      gr_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
       gr_gid: realGid,
       gr_mem: grpMembers
     )
@@ -180,7 +180,7 @@ proc addUser*(name: string, uid, gid: int, home: string, shell = "", pw = "", pw
   defer: grpMembers.deallocCStringArray
   addUser(passwd.addr) and addGroup(grp.addr) and addShadow(shadow.addr)
 
-proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = pwPlaceholder, pwIsEncrypted = false, gecos = "") =
+proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = "") =
   ## Adds an OS user the manual way, by appending a user entry to `/etc/passwd`, `/etc/shadow` and
   ## a corresponding group entry to `/etc/group`.
   ##
@@ -197,17 +197,18 @@ proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = pwP
   ## https://github.com/docksal/unison/pull/7
   ## https://github.com/docksal/unison/pull/1#issuecomment-471114725
   let
+    pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
     passwdFile = passwdPath.open(mode = fmAppend)
     shadowFile = shadowPath.open(mode = fmAppend)
     groupFile = groupPath.open(mode = fmAppend)
     passwdLines = @[
-      &"{name}:{pw}:{uid}:{gid}:{gecos}:{home}:"
+      &"{name}:{pwPlaceholder}:{uid}:{gid}:{gecos}:{home}:"
     ]
     shadowLines = @[
-      &"{name}:!:{timestamp}:0:99999:7:::"
+      &"{name}:{pwEnc}:{timestamp}:0:99999:7:::"
     ]
     groupLines = @[
-      &"{name}:{pw}:{gid}:{name}"
+      &"{name}:{pwPlaceholder}:{gid}:{name}"
     ]
   defer: passwdFile.close
   defer: shadowFile.close
