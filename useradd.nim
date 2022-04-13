@@ -180,7 +180,7 @@ proc addUser*(name: string, uid, gid: int, home: string, shell = "", pw = "", pw
   defer: grpMembers.deallocCStringArray
   addUser(passwd.addr) and addGroup(grp.addr) and addShadow(shadow.addr)
 
-proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = pwPlaceholder, pwIsEncrypted = false) =
+proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = pwPlaceholder, pwIsEncrypted = false, gecos = "") =
   ## Adds an OS user the manual way, by appending a user entry to `/etc/passwd`, `/etc/shadow` and
   ## a corresponding group entry to `/etc/group`.
   ##
@@ -201,7 +201,7 @@ proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = pwP
     shadowFile = shadowPath.open(mode = fmAppend)
     groupFile = groupPath.open(mode = fmAppend)
     passwdLines = @[
-      &"{name}:{pw}:{uid}:{gid}::{home}:"
+      &"{name}:{pw}:{uid}:{gid}:{gecos}:{home}:"
     ]
     shadowLines = @[
       &"{name}:!:{timestamp}:0:99999:7:::"
