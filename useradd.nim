@@ -172,10 +172,11 @@ proc addShadow(entry: ptr Shadow): bool =
 
 proc addGroup(entry: ptr Group): bool =
   let grpFile = groupPath.open(mode = fmAppend)
+  if not grpFile.lockFile(): return false
   defer: grpFile.close
-  putgrent(entry, grpFile) == 0
+  putgrent(entry, grpFile) == 0 and grpFile.unlockFile()
 
-proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool {.discardable.} =
+proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool =
   ## Adds an OS user the official C API way.
   ##
   ## Name          -> User name.            Example: testuser
