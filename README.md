@@ -9,26 +9,110 @@
 [![Liberapay patrons](https://img.shields.io/liberapay/patrons/Akito?style=plastic)](https://liberapay.com/Akito/)
 
 ## What
-This is a base template for App projects written in Nim.
+This is an extended `adduser`/`useradd` [Nim](https://nim-lang.org/) library with batteries included.
+
+It takes care of password encryption, file locking during user modification and so on.
+
+You don't have to take care of anything. Just add or remove your user and that's it. No effort on your part needed!
 
 ## Why
-Allows kickstarting new projects, without fiddling around with metadata basics.
+Low-level user management without a CLI tool in Linux (and UNIX in general) is a pain. You have to know a lot of stuff. You can *very easily* break one of the most important parts of the system, if you do one little mistake like fail to hash the password correctly.
+
+Using the native C API to manage users is a huge pain in the way described above.
+This module intends to take that effort and all those headaches away from you by entirely taking care of the C API bloat.
 
 ## How
-Select this is a template, when creating a new Git repository through a Git WebUI.
+
+First, install this library.
+```nim
+nimble install useradd
+```
+### Usage Examples
+#### Add User
+
+Simplest Example:
+```nim
+import useradd
+
+echo "Success: " & $addUser(
+  name = "mygenericusername",
+  uid = 99121, # No GID provided -> GID will be same as UID.
+  home = "/home/testuserapi",
+  pw = "myInsecurePassword"
+)
+```
+
+A bit more advanced example:
+```nim
+import useradd
+
+echo "Success: " & $addUser(
+  name = "mygenericusername",
+  uid = 99121,
+  gid = 99322,
+  home = "/home/testuserapi",
+  pw = "myInsecurePassword"
+)
+```
+
+An advanced example, with a pre-hashed password:
+
+```nim
+import useradd
+
+echo "Success: " & $addUser(
+  name = "mygenericusername",
+  uid = 99121,
+  gid = 99322,
+  home = "/home/testuserapi",
+  pw = "$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB.",
+  pwIsEncrypted = true
+)
+```
+
+This is useful for migrating passwords from a Shadow database, where the actual passwords are unknown.
+
+An advanced example, where the file operations are done manually, omitting the C API, in case the C API imposes any arbitrary limitations:
+
+```nim
+import useradd
+
+echo "Success: " & $addUserMan( # Only the `proc` name changed. The API stays exactly the same!
+  name = "mygenericusername",
+  uid = 290111,
+  gid = 290112,
+  home = "/home/testuserapi",
+  pw = "$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB.",
+  pwIsEncrypted = true
+)
+```
+
+## Features
+* Automatic File Locking -> Do not worry about corrupting `/etc/passwd`, `/etc/shadow` or `/etc/group`!
+* Automatic Password Encryption -> Do not worry about properly hashing the password, if providing one!
+* Convenient API -> For example, providing a UID but no GID, will assign the UID's value to the GID. It won't break your user creation!
+* Optional Advanced API -> Migrating an existing `/etc/shadow` database? No, problem, just provide the password hashes and turn on `pwIsEncrypted`!
+* Optional Advanced API -> Want to omit the C API and modify the databases directly, by reading/writing to the actual files? Just replace your `addUser` usages with `addUserMan` (same API)!
 
 ## Where
-Git.
+Linux.
+
+Other UNIX derivatives might work, but are not officially supported.
+This project is primarily supposed to work on Linux.
+
+If you want to provide reliable macOS or *BSD support, go ahead I will check it out. But I only will accept it, if it does not reduce the quality of the Linux related implementation. (Hint: using `when`s is probably the way to go.)
 
 ## Goals
-* Performance
+* Reliability
+* Convenience
 
 ## Project Status
-Before Pre-Alpha.
-Unstable API.
+Stable Beta.
+
+This library is well tested & works, but needs more testing and feedback from 3rd parties. --> Please help!
 
 ## TODO
-* Always improve
+* Track Project Tests with this Git repository.
 
 ## License
 Copyright © 2022  Akito <the@akito.ooo>
