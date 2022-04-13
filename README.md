@@ -157,6 +157,8 @@ Stable Beta.
 This library is well tested & works, but needs more testing and feedback from 3rd parties. --> Please help!
 
 ## TODO
+* ~~Publish on Nimble.~~
+* Provide runnable Examples
 * Track Project Tests with this Git repository.
 
 ## License

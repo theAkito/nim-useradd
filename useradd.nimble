@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "Akito <the@akito.ooo>"
-description   = "Linux adduser/useradd library."
+description   = "Linux adduser/useradd library with all batteries included."
 license       = "GPL-3.0-or-later"
 skipDirs      = @["helpers"]
 skipFiles     = @["README.md"]
