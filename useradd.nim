@@ -16,6 +16,24 @@ import
   ]
 
 ##[
+  Passwd File Information
+  =======================
+
+  testuser:x:99123:99321::/home/testuser:/bin/bash
+      1   :2:  3  :  4  :5:       6     :    7
+
+  1. Username, up to 8 characters. Case-sensitive, usually all lowercase
+  2. An "x" in the password field. Passwords are stored in the ``/etc/shadow'' file.
+  3. Numeric user id. This is assigned by the ``adduser'' script. Unix uses this field, plus the following group field, to identify which files belong to the user.
+  4. Numeric group id. Red Hat uses group id's in a fairly unique manner for enhanced file security. Usually the group id will match the user id.
+  5. https://www.redhat.com/sysadmin/linux-gecos-demystified
+  6. User's home directory. Usually /home/username (eg. /home/smithj). All user's personal files, web pages, mail forwarding, etc. will be stored here.
+  7. User's "shell account". Often set to ``/bin/bash'' to provide access to the bash shell.
+
+  https://tldp.org/LDP/lame/LAME/linux-admin-made-easy/shadow-file-formats.html
+]##
+
+##[
   Shadow API Information
   ======================
 
@@ -60,12 +78,12 @@ import
   1. Username, up to 8 characters. Case-sensitive, usually all lowercase. A direct match to the username in the /etc/passwd file.
   2. Password, 13 character encrypted. A blank entry (eg. ::) indicates a password is not required to log in (usually a bad idea), and a ``*'' entry (eg. :*:) indicates the account has been disabled.
   3. The number of days (since January 1, 1970) since the password was last changed.
-  4. The number of days before password may be changed (0 indicates it may be changed at any time)
-  5. The number of days after which password must be changed (99999 indicates user can keep his or her password unchanged for many, many years)
-  6. The number of days to warn user of an expiring password (7 for a full week)
-  7. The number of days after password expires that account is disabled
-  8. The number of days since January 1, 1970 that an account has been disabled
-  9. A reserved field for possible future use
+  4. The number of days before password may be changed (0 indicates it may be changed at any time).
+  5. The number of days after which password must be changed (99999 indicates user can keep his or her password unchanged for many, many years).
+  6. The number of days to warn user of an expiring password (7 for a full week).
+  7. The number of days after password expires that account is disabled.
+  8. The number of days since January 1, 1970 that an account has been disabled.
+  9. A reserved field for possible future use.
 
   https://tldp.org/LDP/lame/LAME/linux-admin-made-easy/shadow-file-formats.html
 
