@@ -100,6 +100,36 @@ import useradd
 echo "Success Delete User: " & $deleteUser("mygenericusername") # Deletes from `/etc/passwd`, `/etc/shadow` and `/etc/group` by name!
 ```
 
+### Notes on Encryption
+
+If for whatever reason, you do not like the encryption method employed, because the salt uses the, at this time, yet unaudited [`std/sysrand`](https://nim-lang.org/docs/sysrand.html) module, to generate a salt, then you are free to encrypt with your own salt.
+
+```nim
+import useradd/crypt
+
+const
+  password = "hello"
+  salt = "$6$mycustomslt$"
+
+echo encrypt(password) # Uses this module's way of generating the salt.
+
+echo encrypt(password, salt) # You provide you own salt according to crypt(3)s specification: $5$salt$
+
+echo "Success: " & $addUser( # Add user with your own self-generated password.
+  name = "mygenericusername",
+  uid = 99121,
+  gid = 99322,
+  home = "/home/testuserapi",
+  pw = $encrypt(password, salt),
+  pwIsEncrypted = true
+)
+```
+
+See the [`crypt(3)`](https://linux.die.net/man/3/crypt) manual for more information on how to properly create the salt.
+
+### Hints
+* `root` permissions are needed, as we are modifying system files.
+
 ## Features
 * Automatic File Locking -> Do not worry about corrupting `/etc/passwd`, `/etc/shadow` or `/etc/group`!
 * Automatic Password Encryption -> Do not worry about properly hashing the password, if providing one!
