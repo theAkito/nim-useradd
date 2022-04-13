@@ -141,6 +141,12 @@ proc lockShadow(): bool =
 proc unlockShadow(): bool =
   shadowPath.open(mode = fmAppend).unlockFile()
 
+proc lockGroup(): bool =
+  groupPath.open(mode = fmAppend).lockFile()
+
+proc unlockGroup(): bool =
+  groupPath.open(mode = fmAppend).unlockFile()
+
 proc readPasswd(): seq[ptr Passwd] =
   ## Reads all password entries from `/etc/passwd`.
   var currentPwEnt: ptr Passwd
@@ -250,6 +256,7 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
   ## check out `addUser`'s and this module's documentation.
   if not lockPasswd(): return false
   if not lockShadow(): return false
+  if not lockGroup(): return false
   let
     pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
     passwdFile = passwdPath.open(mode = fmAppend)
@@ -270,7 +277,7 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
   passwdFile.writeLines(passwdLines)
   shadowFile.writeLines(shadowLines)
   groupFile.writeLines(groupLines)
-  unlockPasswd() and unlockShadow()
+  unlockPasswd() and unlockShadow() and unlockGroup()
 
 proc deleteUser*(name: string) =
   ## Deletes a user by manually deleting its entry from `/etc/passwd`, `/etc/shadow` and
