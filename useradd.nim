@@ -143,10 +143,34 @@ proc addGroup(entry: ptr Group): bool =
   defer: grpFile.close
   putgrent(entry, grpFile) == 0
 
-proc addUser*(name: string, uid, gid: int, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool {.discardable.} =
+proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool {.discardable.} =
   ## Adds an OS user the official C API way.
+  ##
+  ## Name          -> User name.            Example: testuser
+  ## uid           -> User ID.              Example: 9234
+  ## gid           -> Group ID.             Example: 9432
+  ## home          -> Home location.        Example: /home/testuser
+  ## shell         -> Shell location.       Example: /bin/bash
+  ## pw            -> (Encrypted) Password. Example: $6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB.
+  ## pwIsEncrypted -> Whether password is already encrypted. If it is, it expects a password processed by [crypt(3)](https://linux.die.net/man/3/crypt) into a salted and ID'd password hash. If it is not (default behaviour), the password will be encrypted, before being added to `/etc/shadow`.
+  ## gecos         -> GECOS string.         Example: Linux User,,,
+  ##
+  ## Hints:
+  ##   * If GID is not important to you, just set it to the value of UID or keep it empty, to let the proc do it for you.
+  ##   * If the default shell is not important to you, just provide an empty string.
+  ##   * If the home location is not important to you, then you should probably just set an existing path, you do not care about. See for more information: https://unix.stackexchange.com/a/617552/196626
+  ##   * If you do not care about a password, just keept it an empty string.
+  ##   * If you do not care about the GECOS field, just keept it an empty string.
+  ##   * You might want to make sure, that you do not add a user with an already existing UID. The user's name is the primary factor when identifying users, however it might be better to keep UIDs unique. See for more information: https://unix.stackexchange.com/a/466817/196626
+  ##
+  ## Further information regarding this topic is found in this module's documentation
+  ## and in the following external sources.
+  ##
+  ## https://tldp.org/LDP/lame/LAME/linux-admin-made-easy/shadow-file-formats.html
+  ## https://tldp.org/HOWTO/Shadow-Password-HOWTO-8.html
+  ## https://www.tutorialsandyou.com/linux/linux-group-file-7.html
+  ## https://www.redhat.com/sysadmin/linux-gecos-demystified
   # TODO: lckpwdf()
-  # TODO Check if UID is duplicate before adding this user.
   var
     realGid = gid.Gid
     passwd = Passwd(
@@ -180,7 +204,7 @@ proc addUser*(name: string, uid, gid: int, home: string, shell = "", pw = "", pw
   defer: grpMembers.deallocCStringArray
   addUser(passwd.addr) and addGroup(grp.addr) and addShadow(shadow.addr)
 
-proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = "") =
+proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool {.discardable.} =
   ## Adds an OS user the manual way, by appending a user entry to `/etc/passwd`, `/etc/shadow` and
   ## a corresponding group entry to `/etc/group`.
   ##
@@ -196,16 +220,19 @@ proc addUserMan*(name: string, uid, gid: int, home: string, shell = "", pw = "",
   ## https://github.com/docksal/unison/pull/1/files
   ## https://github.com/docksal/unison/pull/7
   ## https://github.com/docksal/unison/pull/1#issuecomment-471114725
+  ##
+  ## For more information regarding the API for adding a user in general,
+  ## check out `addUser`'s and this module's documentation.
   let
     pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
     passwdFile = passwdPath.open(mode = fmAppend)
     shadowFile = shadowPath.open(mode = fmAppend)
     groupFile = groupPath.open(mode = fmAppend)
     passwdLines = @[
-      &"{name}:{pwPlaceholder}:{uid}:{gid}:{gecos}:{home}:"
+      &"{name}:{pwPlaceholder}:{uid}:{gid}:{gecos}:{home}:{shell}"
     ]
     shadowLines = @[
-      &"{name}:{pwEnc}:{timestamp}:0:99999:7:::"
+      &"{name}:{pwEnc}:{timestamp}:{shadowMinDays}:{shadowExpireDays}:{shadowWarnDays}:::"
     ]
     groupLines = @[
       &"{name}:{pwPlaceholder}:{gid}:{name}"
