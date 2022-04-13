@@ -122,7 +122,15 @@ proc putpwent(p: ptr Passwd, stream: File): int {.importc, header: "<pwd.h>", si
 proc putspent(p: ptr Shadow, fp: File): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/putspent
 proc putgrent(grp: ptr Group, fp: File): int {.importc, header: "<grp.h>", sideEffect.} ## https://linux.die.net/man/3/putgrent
 ## Utils
+proc lockFile(file: File): bool
+proc unlockFile(file: File): bool
 proc append(path: string): File = path.open(mode = fmAppend)
+proc lockPasswd():   bool = passwdPath.append.lockFile()
+proc unlockPasswd(): bool = passwdPath.append.unlockFile()
+proc lockShadow():   bool = shadowPath.append.lockFile()
+proc unlockShadow(): bool = shadowPath.append.unlockFile()
+proc lockGroup():    bool = groupPath.append.lockFile()
+proc unlockGroup():  bool = groupPath.append.unlockFile()
 
 proc lockFile(file: File): bool =
   let fileHandle = file.getOsFileHandle()
@@ -131,24 +139,6 @@ proc lockFile(file: File): bool =
 
 proc unlockFile(file: File): bool =
   file.getOsFileHandle().lockf(F_ULOCK, 0) == 0
-
-proc lockPasswd(): bool =
-  passwdPath.append.lockFile()
-
-proc unlockPasswd(): bool =
-  passwdPath.append.unlockFile()
-
-proc lockShadow(): bool =
-  shadowPath.append.lockFile()
-
-proc unlockShadow(): bool =
-  shadowPath.append.unlockFile()
-
-proc lockGroup(): bool =
-  groupPath.append.lockFile()
-
-proc unlockGroup(): bool =
-  groupPath.append.unlockFile()
 
 proc readPasswd(): seq[ptr Passwd] =
   ## Reads all password entries from `/etc/passwd`.
