@@ -121,6 +121,26 @@ proc putpwent(p: ptr Passwd, stream: File): int {.importc, header: "<pwd.h>", si
 proc putspent(p: ptr Shadow, fp: File): int {.importc, header: "<shadow.h>", sideEffect.} ## https://linux.die.net/man/3/putspent
 proc putgrent(grp: ptr Group, fp: File): int {.importc, header: "<grp.h>", sideEffect.} ## https://linux.die.net/man/3/putgrent
 
+proc lockFile(file: File): bool =
+  let fileHandle = file.getOsFileHandle()
+  if fileHandle.lockf(F_TEST, 0) == -1: return false
+  fileHandle.lockf(F_TLOCK, 0) == 0
+
+proc unlockFile(file: File): bool =
+  file.getOsFileHandle().lockf(F_ULOCK, 0) == 0
+
+proc lockPasswd(): bool =
+  passwdPath.open(mode = fmAppend).lockFile()
+
+proc unlockPasswd(): bool =
+  passwdPath.open(mode = fmAppend).unlockFile()
+
+proc lockShadow(): bool =
+  shadowPath.open(mode = fmAppend).lockFile()
+
+proc unlockShadow(): bool =
+  shadowPath.open(mode = fmAppend).unlockFile()
+
 proc readPasswd(): seq[ptr Passwd] =
   ## Reads all password entries from `/etc/passwd`.
   var currentPwEnt: ptr Passwd
@@ -131,24 +151,18 @@ proc readPasswd(): seq[ptr Passwd] =
   endpwent()
 
 proc addUser(entry: ptr Passwd): bool =
-  let
-    passwdFile = passwdPath.open(mode = fmAppend)
-    passwdFileHandle = passwdFile.getOsFileHandle()
-  if passwdFileHandle.lockf(F_TEST, 0) == -1: return false
-  if passwdFileHandle.lockf(F_TLOCK, 0) == -1: return false
+  let passwdFile = passwdPath.open(mode = fmAppend)
+  if not passwdFile.lockFile(): return false
   defer: passwdFile.close
-  putpwent(entry, passwdFile) == 0 and passwdFileHandle.lockf(F_ULOCK, 0) == 0
+  putpwent(entry, passwdFile) == 0 and passwdFile.unlockFile()
 
 proc addShadow(entry: ptr Shadow): bool =
   if lckpwdf() == -1: return false
-  let
-    shadowFile = shadowPath.open(mode = fmAppend)
-    shadowFileHandle = shadowFile.getOsFileHandle()
-  if shadowFileHandle.lockf(F_TEST, 0) == -1: return false
-  if shadowFileHandle.lockf(F_TLOCK, 0) == -1: return false
+  let shadowFile = shadowPath.open(mode = fmAppend)
+  if not shadowFile.lockFile(): return false
   defer: shadowFile.close
   defer: discard ulckpwdf()
-  putspent(entry, shadowFile) == 0 and shadowFileHandle.lockf(F_ULOCK, 0) == 0
+  putspent(entry, shadowFile) == 0 and shadowFile.unlockFile()
 
 proc addGroup(entry: ptr Group): bool =
   let grpFile = groupPath.open(mode = fmAppend)
@@ -215,7 +229,7 @@ proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = 
   defer: grpMembers.deallocCStringArray
   addUser(passwd.addr) and addGroup(grp.addr) and addShadow(shadow.addr)
 
-proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool {.discardable.} =
+proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw = "", pwIsEncrypted = false, gecos = ""): bool =
   ## Adds an OS user the manual way, by appending a user entry to `/etc/passwd`, `/etc/shadow` and
   ## a corresponding group entry to `/etc/group`.
   ##
@@ -234,6 +248,8 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
   ##
   ## For more information regarding the API for adding a user in general,
   ## check out `addUser`'s and this module's documentation.
+  if not lockPasswd(): return false
+  if not lockShadow(): return false
   let
     pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
     passwdFile = passwdPath.open(mode = fmAppend)
@@ -254,6 +270,7 @@ proc addUserMan*(name: string, uid: int, gid = uid, home: string, shell = "", pw
   passwdFile.writeLines(passwdLines)
   shadowFile.writeLines(shadowLines)
   groupFile.writeLines(groupLines)
+  unlockPasswd() and unlockShadow()
 
 proc deleteUser*(name: string) =
   ## Deletes a user by manually deleting its entry from `/etc/passwd`, `/etc/shadow` and
