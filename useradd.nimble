@@ -66,6 +66,8 @@ task dbuild, "Debug Build project.":
        """
 task example_custom_salt, "Run example Docker build to show custom salt usage.":
   exec &"nim e tasks/example_build_docker_custom_salt.nims"
+task example_simple, "Run example Docker build to show simple usage.":
+  exec &"nim e tasks/example_build_docker_simple.nims"
 task makecfg, "Create nim.cfg for optimized builds.":
   exec "nim tasks/cfg_optimized.nims"
 task clean, "Removes nim.cfg.":
