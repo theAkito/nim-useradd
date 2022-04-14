@@ -20,5 +20,4 @@ htmldocs/
 # Binaries and Temp Files
 /useradd_prod
 /useradd_debug
-useradd/crypt
-example
+/useradd/crypt

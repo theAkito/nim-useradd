@@ -21,5 +21,7 @@ docker \
   testuseradd/custom_salt:example
 """
 
+## Delete all related Docker Containers Examples, safely.
+discard gorge """docker container prune --force --filter "label=testuseradd""""
 ## Delete all Docker Image Examples, safely.
 discard gorge """docker image prune --force --all --filter "label=testuseradd""""
