@@ -5,6 +5,10 @@ import
     sequtils
   ]
 
+proc toDedicated*(s: cstring, size: int): string =
+  result = newString(size)
+  copyMem(result.cstring, s, size)
+
 proc readLines*(file: File): seq[string] =
   file.readAll.splitLines
 

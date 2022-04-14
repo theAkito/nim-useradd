@@ -24,14 +24,17 @@ import
   ]
 
 from posix import crypt
+from utils import toDedicated
 
 const
+  resultSize = 106
   rawBytePoolSize = 1024
   saltCharAmount = 16
   delimiter = '$'
   idNumSHA512 = '6'
   idSHA512 = delimiter & idNumSHA512 & delimiter
 
+proc toDedicated*(s: cstring): string = s.toDedicated(resultSize) ## Append to `encrypt`, to get a dedicated string for the result. Otherwise, each `encrypt` call would overwrite the same memory location. Example usage: `from crypt import toDedicated; let myInsecurePw = encrypt("myInsecurePassword").toDedicated()`
 func toChar(bytes: seq[byte]): seq[char] = bytes.mapIt(it.chr)
 func getASCII(input: seq[char]): seq[char] = input.filterIt(it.isAlphaAscii)
 func getMaxSaltAmount(input: seq[char], amount: int): seq[char] = input[0..amount-1]

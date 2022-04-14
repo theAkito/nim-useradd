@@ -158,8 +158,8 @@ This library is well tested & works, but needs more testing and feedback from 3r
 
 ## TODO
 * ~~Publish on Nimble.~~
-* Provide runnable Examples
-* Track Project Tests with this Git repository.
+* ~~Provide runnable Examples~~
+* ~~Track Project Tests with this Git repository.~~
 
 ## License
 Copyright © 2022  Akito <the@akito.ooo>
