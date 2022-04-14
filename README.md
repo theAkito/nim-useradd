@@ -100,6 +100,13 @@ import useradd
 echo "Success Delete User: " & $deleteUser("mygenericusername") # Deletes from `/etc/passwd`, `/etc/shadow` and `/etc/group` by name!
 ```
 
+### Live Examples
+
+```bash
+nimble example_simple
+nimble example_custom_salt
+```
+
 ### Notes on Encryption
 
 If for whatever reason, you do not like the encryption method employed, because the salt uses the, at this time, yet unaudited [`std/sysrand`](https://nim-lang.org/docs/sysrand.html) module, to generate a salt, then you are free to encrypt with your own salt.
