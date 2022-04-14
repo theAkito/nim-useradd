@@ -26,4 +26,6 @@ function displaySysFileContents {
 echo
 echo
 /custom_salt
+echo
+echo
 displaySysFileContents

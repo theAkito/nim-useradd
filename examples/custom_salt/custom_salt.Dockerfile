@@ -8,6 +8,7 @@ WORKDIR /useradd
 
 RUN nim c --forceBuild:on --debuginfo:on --out:custom_salt examples/custom_salt/custom_salt.nim
 
+
 FROM akito13/alpine
 
 LABEL testuseradd=true
