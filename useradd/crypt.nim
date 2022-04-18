@@ -16,13 +16,9 @@
     The characters in "salt" and "encrypted" are drawn from the set [a-zA-Z0-9./]. In the MD5 and SHA implementations the entire key is significant (instead of only the first 8 bytes in DES).
 ]##
 
-import
-  std/[
-    strutils,
-    sequtils,
-    sysrand
-  ]
-
+from std/strutils import isAlphaAscii, join
+from std/sequtils import mapIt, filterIt
+from std/sysrand import urandom
 from posix import crypt
 from utils import toDedicated
 
