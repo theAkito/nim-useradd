@@ -1,8 +1,8 @@
 from logging import Level, ConsoleLogger, newConsoleLogger
+from strutils import startsWith
 
 const
   debug             * {.booldefine.} = false
-  linuxAlpine       * {.booldefine.} = false ## Set to yes, if compiling for Alpine arm64.
   lineEnd           * {.strdefine.}  = "\n"
   defaultDateFormat * {.strdefine.}  = "yyyy-MM-dd'T'HH:mm:ss'.'fffffffff'Z'"
   logMsgPrefix      * {.strdefine.}  = "[$levelname]:[$datetime]"
@@ -20,6 +20,7 @@ const
   passwdPath        * {.strdefine.}  = "/etc/passwd"
   shadowPath        * {.strdefine.}  = "/etc/shadow"
   groupPath         * {.strdefine.}  = "/etc/group"
+  cpuARM                           * = hostCPU.startsWith "arm"
 
 
 func defineLogLevel*(): Level =
