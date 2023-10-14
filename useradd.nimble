@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.2.0"
 author        = "Akito <the@akito.ooo>"
 description   = "Linux adduser/useradd library with all batteries included."
 license       = "GPL-3.0-or-later"

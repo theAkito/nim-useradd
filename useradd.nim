@@ -12,7 +12,8 @@ import
     times,
     strformat,
     strutils,
-    posix
+    posix,
+    distros
   ]
 
 ##[
@@ -199,32 +200,48 @@ proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = 
   ## https://www.redhat.com/sysadmin/linux-gecos-demystified
   var
     realGid = gid.Gid
-    passwd = Passwd(
-      pw_name: name,
-      pw_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
-      pw_uid: uid.Uid,
-      pw_gid: realGid,
-      pw_gecos: gecos, # https://www.redhat.com/sysadmin/linux-gecos-demystified
-      pw_dir: home,
-      pw_shell: shell
-    )
+    passwd = if not (Alpine.detectOs): ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix.nim#L103-L114
+        Passwd( ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix_linux_amd64.nim#L124-L132
+          pw_name: name,
+          pw_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
+          pw_uid: uid.Uid,
+          pw_gid: realGid,
+          pw_gecos: gecos, # https://www.redhat.com/sysadmin/linux-gecos-demystified
+          pw_dir: home,
+          pw_shell: shell
+        )
+      else:
+        Passwd( ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix_other.nim#L139-L145
+          pw_name: name,
+          pw_uid: uid.Uid,
+          pw_gid: realGid,
+          pw_dir: home,
+          pw_shell: shell
+        )
     grpMembers = @[name].allocCStringArray
-    grp = Group(
-      gr_name: name,
-      gr_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
-      gr_gid: realGid,
-      gr_mem: grpMembers
-    )
+    grp = if not (Alpine.detectOs): ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix.nim#L103-L114
+        Group(
+          gr_name: name,
+          gr_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
+          gr_gid: realGid,
+          gr_mem: grpMembers
+        )
+      else:
+        Group( ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix_other.nim#L93C16-L97
+          gr_name: name,
+          gr_gid: realGid,
+          gr_mem: grpMembers
+        )
     pwEnc: cstring = if pwIsEncrypted or pw.isEmptyOrWhitespace: pw.cstring else: pw.encrypt()
     shadow = Shadow(
       sp_namp   : name,              ## Username, up to 8 characters. Case-sensitive, usually all lowercase. A direct match to the username in the /etc/passwd file.
       sp_pwdp   : pwEnc,             ## Password, encrypted. A blank entry (eg. ::) indicates a password is not required to log in (usually a bad idea), and a ``*'' entry (eg. :*:) indicates the account has been disabled.
       sp_lstchg : timestamp.int,     ## The number of days (since January 1, 1970) since the password was last changed.
-      sp_min    : shadowMinDays,     ## The number of days before password may be changed (0 indicates it may be changed at any time)
-      sp_max    : shadowExpireDays,  ## The number of days after which password must be changed (99999 indicates user can keep his or her password unchanged for many, many years)
-      sp_warn   : shadowWarnDays,    ## The number of days to warn user of an expiring password (7 for a full week)
-      sp_inact  : shadowNoValue,     ## The number of days after password expires that account is disabled
-      sp_expire : shadowNoValue,     ## The number of days since January 1, 1970 that an account has been disabled
+      sp_min    : shadowMinDays,     ## The number of days before password may be changed (0 indicates it may be changed at any time).
+      sp_max    : shadowExpireDays,  ## The number of days after which password must be changed (99999 indicates user can keep his or her password unchanged for many, many years).
+      sp_warn   : shadowWarnDays,    ## The number of days to warn user of an expiring password (7 for a full week).
+      sp_inact  : shadowNoValue,     ## The number of days after password expires that account is disabled.
+      sp_expire : shadowNoValue,     ## The number of days since January 1, 1970 that an account has been disabled.
       sp_flag   : cast[culong](shadowNoValue) # This cast is the only way to NOT make a 0 appear, instead of nothing. Example: `testuser:$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB.:19094:0:99999:7:::0` is wrong. `testuser:$6$FCIBNRCTLwRrEErx$coMD2oCFWgtH7SzwNQnXo8D3ngexpLVpLkiYmw70zh7/Vc8xIOrpXEMDqgw.890JW2C/IJmIu6tsX/6hC/qBB.:19094:0:99999:7:::` is correct.
     )
   defer: grpMembers.deallocCStringArray
