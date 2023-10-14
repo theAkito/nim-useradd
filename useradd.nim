@@ -200,7 +200,7 @@ proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = 
   ## https://www.redhat.com/sysadmin/linux-gecos-demystified
   var
     realGid = gid.Gid
-    passwd = if not (Alpine.detectOs): ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix.nim#L103-L114
+    passwd = when not linuxAlpine: ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix.nim#L103-L114
         Passwd( ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix_linux_amd64.nim#L124-L132
           pw_name: name,
           pw_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
@@ -219,7 +219,7 @@ proc addUser*(name: string, uid: int, gid = uid, home: string, shell = "", pw = 
           pw_shell: shell
         )
     grpMembers = @[name].allocCStringArray
-    grp = if not (Alpine.detectOs): ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix.nim#L103-L114
+    grp = when not linuxAlpine: ## https://github.com/nim-lang/Nim/blob/f5d70e7fa7195658e3200f71a1653e07fe81275a/lib/posix/posix.nim#L103-L114
         Group(
           gr_name: name,
           gr_passwd: pwPlaceholder, ## Password will always be in shadow. I.e. we reference that fact with the default placeholder.
